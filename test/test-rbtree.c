@@ -20,7 +20,9 @@ void test_init(void) {
 // root node should have proper values and pointers
 void test_insert_single(const key_t key) {
   rbtree *t = new_rbtree();
+  printf("ffff");
   node_t *p = rbtree_insert(t, key);
+  printf("ffff");
   assert(p != NULL);
   assert(t->root == p);
   assert(p->key == key);
@@ -43,11 +45,13 @@ void test_find_single(const key_t key, const key_t wrong_key) {
   node_t *p = rbtree_insert(t, key);
 
   node_t *q = rbtree_find(t, key);
+  
   assert(q != NULL);
   assert(q->key == key);
   assert(q == p);
 
   q = rbtree_find(t, wrong_key);
+  
   assert(q == NULL);
 
   delete_rbtree(t);
@@ -313,8 +317,10 @@ void test_to_array_suite() {
 void test_find_erase(rbtree *t, const key_t *arr, const size_t n) {
   for (int i = 0; i < n; i++) {
     node_t *p = rbtree_insert(t, arr[i]);
+    // printf("삽입 완\n");
     assert(p != NULL);
   }
+
 
   for (int i = 0; i < n; i++) {
     node_t *p = rbtree_find(t, arr[i]);
@@ -369,15 +375,25 @@ void test_find_erase_rand(const size_t n, const unsigned int seed) {
 
 int main(void) {
   test_init();
+  printf("init!!\n");
   test_insert_single(1024);
+  printf("insert!!\n");
   test_find_single(512, 1024);
+  printf("find!!\n");
   test_erase_root(128);
+  printf("erase\n");
   test_find_erase_fixed();
+  printf("erase2");
   test_minmax_suite();
+  printf("minmax\n");
   test_to_array_suite();
+  printf("array\n");
   test_distinct_values();
+  printf("distinct_value\n");
   test_duplicate_values();
+  printf("duplicate_value\n");
   test_multi_instance();
+  printf("muti_instance\n");
   test_find_erase_rand(10000, 17);
   printf("Passed all tests!\n");
 }
