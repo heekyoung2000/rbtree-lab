@@ -7,12 +7,12 @@ rbtree *new_rbtree(void) { //새로운 rbtree를 선언, nil 노드를 root 노�
   node_t *nil = (node_t *)calloc(1,sizeof(node_t)); //node_t에 배열 할당
   
   nil->color=RBTREE_BLACK; //nil의 색깔은 black으로 지정
-  p-> root = nil; // root 노드를 nil로 선언
+  p-> root = nil; // root 노드를 nil로 선언 ( tree가 빈 경우에는 root 노드가 nill 노드이여야 하기 때문)
   p-> nil = nil; // nil을 nil로 선언
-
   // TODO: initialize struct if needed
   return p;
 }
+//각 노드와 그 자식 노드들의 메모리를 반환하는 함수
 void free_node(rbtree *t,node_t *x){
   if(x->left != t->nil){
     free_node(t,x->left);
@@ -20,82 +20,90 @@ void free_node(rbtree *t,node_t *x){
   if(x->right!=t->nil){
     free_node(t,x->right);
   }
+  //후위 순위를 통해 노드 메모리 반환
   free(x);
   x=NULL;
 }
+//트리를 순회하면서 각 노드의 메모리를 반환하는 함수
 void delete_rbtree(rbtree *t) {
   // TODO: reclaim the tree nodes's memory
   //노드를 하나씩 찾아가면서 삭제 해줘야 함
   if(t->root!=t->nil){
     free_node(t,t->root);
   }
+  //nill 노드와 트리의 구조체를 반환
   free(t->nil);
   free(t);//트리 free
 }
 
 node_t *rbtree_insert(rbtree *t, const key_t key) {
   // TODO: implement insert
-  node_t *y = t->nil;
-  node_t *x = t->root;
+  node_t *y = t->nil; //y는 nil 노드
+  node_t *x = t->root; //x는 루트노드
   node_t *z =(node_t *)calloc(1,sizeof(node_t)); //새 노드 생성
-  z -> key = key;
+  z -> key = key; //새 노드의 키값을 저장 
+  
 
-  while(x != t->nil){
-    y=x;
-    if (z->key < x->key){
-      x=x->left;
+  while(x != t->nil){ //루트노드가 nil이 아닐때 -트리 내에서 삽입할 위치 탐색하는 과정
+    y=x; 
+    if (z->key < x->key){ // 현재 탐색 하고 있는 키 값이 x노드의 키 값보다 작을때
+      x=x->left; // x의 왼쪽 노드에 넣어줌
     }
-    else{
-      x=x->right;
+    else{ // 만약 x노드의 키 값보다 클때
+      x=x->right; // x의 오른쪽 노드에 넣어줌
       }
     }
-  z->parent =y;
-  if (y==t->nil){
-    t->root = z;
+  z->parent =y; // z의 부모노드는 y로 지정 - 새 노드의 부모를 지정하는 과정
+  if (y==t->nil){ //만약 y가 nil일 경우
+    t->root = z; //루트 노드는 z
   }
-  else if(z->key < y->key){
-    y->left = z;
+  else if(z->key < y->key){ // z의 key값이 y의 키값보다 작을 경우
+    y->left = z; //y의 왼쪽 노드에 z를 삽입한다.
   }
-  else{
-    y->right =z;
+  else{ //z의 key 값이 y의 키값보다 클경우
+    y->right =z; //y의 오른쪽 노드에 z 삽입
   }
-  z->left = t->nil;
+  z->left = t->nil; //새로 삽입한 노드의 왼쪽이랑 오른쪽은 nil로 설정
   z->right = t->nil;
-  z ->color = RBTREE_RED;
-  rb_insert_fixup(t, z);
+  z ->color = RBTREE_RED; // z노드의 색을 레드로 설정
+  rb_insert_fixup(t, z); //불균형 복구
   
   return z;
 }
 
+
+//새로 삽입된 노드는 항상 RED 색상으로 삽입 되는데, 새로 삽입된 노드의 부모 노드가 RED인경우, 규칙위반이므로 불균형
+//따라서 3가지로 나눠서 CASE 해결
 void rb_insert_fixup(rbtree *t,node_t *z){
-  node_t *uncle; //?
+  node_t *uncle; //삼촌 노드 설정
+  //새로 삽입돈 노드의 부모 노드가 RED 인 경우 - 루트노드까지 불균형 삽입이 없는지 확인해야 하므로 while 문 사용
   while(z->parent->color == RBTREE_RED) {
     //z의 부모가 조부모의 왼쪽 서브트리일 경우
     if(z->parent == z->parent->parent->left){
       uncle=z->parent->parent->right;
       //CASE 1: 노드 z의 삼촌 y가 적색인 경우
       if(uncle->color ==RBTREE_RED){
-        z->parent->color =RBTREE_BLACK; 
-        uncle->color = RBTREE_BLACK;
-        z -> parent -> parent ->color =RBTREE_RED;
-        z = z ->parent->parent;
+        z->parent->color =RBTREE_BLACK; //z의 부모노드의 색깔은 black으로 바꿔줌
+        uncle->color = RBTREE_BLACK; // 삼촌 노드의 색깔을 black으로 바꿔줌
+        z -> parent -> parent ->color =RBTREE_RED; //조부모의 색깔을 red로 바꿔줌
+        z = z ->parent->parent; // z의 위치를 조부모의 위치로 옮겨줌
       }
       // case 2 : z의 삼촌 uncle이 흑색이며 z가 오른쪽 자식 인 경우
       else{
-        if(z == z->parent->right){
-            z = z->parent;
-            left_rotate(t,z);
+        if(z == z->parent->right){ 
+            z = z->parent; //z의 위치를 부모 노드의 위치로 옮겨주고
+            left_rotate(t,z); //왼쪽 회전 
         }
         //case 3 : z이 삼촌 y가 흑색이며 z의 왼쪽 자식 인 경우
-        z->parent->color = RBTREE_BLACK;
-        z->parent->parent->color = RBTREE_RED;
-        right_rotate(t,z->parent->parent);
+        z->parent->color = RBTREE_BLACK; // 부모노드의 색깔을 black이라 설정
+        z->parent->parent->color = RBTREE_RED; // 조부모의 색깔을 red라 설정
+        right_rotate(t,z->parent->parent); //오른쪽 회전
       }
     }
-    //z의 부모가 조부모의 왼쪽 서브 트리 일 경우
+    //z의 부모가 조부모의 오른쪽 서브 트리 일 경우 ( 위에 경우와 거의 일치)
     else{
-      uncle=z->parent->parent->left;
-      //case 4 : 노드 z의 삼촌 y가 적색인 경우
+      uncle=z->parent->parent->left;//삼촌노드는 z의 조부모의 왼쪽 노드이다.
+      //case 4 : 노드 z의 삼촌 uncle이 적색인 경우
       if(uncle->color == RBTREE_RED){
         z->parent->color =RBTREE_BLACK;
         uncle->color = RBTREE_BLACK;
@@ -116,7 +124,7 @@ void rb_insert_fixup(rbtree *t,node_t *z){
 
     }
   }
-  t->root->color = RBTREE_BLACK;
+  t->root->color = RBTREE_BLACK; // 마지막으로 루트 노드의 색깔을 black으로 설정
 
   
 
@@ -189,11 +197,11 @@ int rbtree_erase(rbtree *t, node_t *p) {
   node_t *y;
   node_t *x;
   color_t y_original_color;
-  y=p;
-  y_original_color = y->color;
-  if(p->left==t->nil){
+  y=p; //
+  y_original_color = y->color; // y의 original color에 현재 y의 color를 저장한다.
+  if(p->left==t->nil){ // 
     x = p->right;
-    rb_transplant(t,p,p->right);
+    rb_transplant(t,p,p->right); // 
   }
   else if(p->right == t->nil){
     x=p->left;
@@ -229,39 +237,39 @@ int rbtree_erase(rbtree *t, node_t *p) {
 
 void rbtree_delete_fixup(rbtree *t, node_t *x){
   node_t *w;
-  while(x!=t->root && x->color == RBTREE_BLACK){
+  while(x!=t->root && x->color == RBTREE_BLACK){ //x노드가 루트노드가 아닐때, 색깔이 black이 아닐때 
     //case 1~4 : 왼쪽
-    if(x==x->parent->left){
-      w=x->parent->right;
+    if(x==x->parent->left){// x의 부모노드가 왼쪽일때
+      w=x->parent->right; // w는 x의 부모노드의 오른쪽
       
       //case 1 : x의 형제 w가 적색인 경우
-      if(w->color == RBTREE_RED){
-        w->color =RBTREE_BLACK;
-        x->parent->color = RBTREE_RED;
-        left_rotate(t,x->parent);
-        w=x->parent->right;
+      if(w->color == RBTREE_RED){ //
+        w->color =RBTREE_BLACK; // 형제노드의 색깔을 black으로 설정
+        x->parent->color = RBTREE_RED; //x 부모의 색깔이 red로 설정
+        left_rotate(t,x->parent); //왼쪽 회전
+        w=x->parent->right; // 형제 노드는 오른쪽에 위치
       }
 
       //case 2 : x의 형제 w는 흑색이고 w의 두 자식이 모두 흑색인 경우
       if (w->left->color==RBTREE_BLACK && w->right->color ==RBTREE_BLACK)
       {
-        w->color = RBTREE_RED;
-        x=x->parent;
+        w->color = RBTREE_RED; //형제노드의 색깔은 red
+        x=x->parent; //x의 위치를 x의 부모노드로 이동
       }
       //case 3 : x의 형제 w는 흑색, w의 왼쪽 자식은 적색, w의 오른쪽 자신은 흑색인 경우
       else{
-        if(w->right->color == RBTREE_BLACK){
-          w->left->color = RBTREE_BLACK;
-          w->color = RBTREE_RED;
-          right_rotate(t,w);
-          w=x->parent->right;
+        if(w->right->color == RBTREE_BLACK){ // 형제노드의 오른쪽 색깔은 black일때
+          w->left->color = RBTREE_BLACK;//형제노드의 왼쪽 색깔은 black
+          w->color = RBTREE_RED;//형제노드의 색깔을 red로 설정
+          right_rotate(t,w); // 오른쪽 회전
+          w=x->parent->right; //형제노드는 부모노드의 오른쪽
         }
         //case 4 : x의 형제 w는 흑색이고 w의 오른쪽 자식은 적색인 경우
-        w->color = x->parent->color;
-        x->parent->color = RBTREE_BLACK;
-        w->right->color = RBTREE_BLACK;
-        left_rotate(t,x->parent);
-        x=t->root;
+        w->color = x->parent->color; // 형제노드의 색깔을 부모노드의 색깔과 같게 함
+        x->parent->color = RBTREE_BLACK; // 형제노드의 색깔을 black으로 함
+        w->right->color = RBTREE_BLACK; //오른쪽 색깔을 black으로 함
+        left_rotate(t,x->parent);//왼쪽으로 회전
+        x=t->root;//x는 루트노드로 설정
       }
       
     }
